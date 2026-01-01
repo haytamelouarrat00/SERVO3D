@@ -4,9 +4,19 @@ import itertools
 import matplotlib.pyplot as plt
 
 def correspond(img1, img2):
+    img1_cv = np.asarray(img1)
+    img2_cv = np.asarray(img2)
+    if img1_cv.dtype != np.uint8:
+        img1_cv = img1_cv.astype(np.uint8)
+    if img2_cv.dtype != np.uint8:
+        img2_cv = img2_cv.astype(np.uint8)
+
     sift = cv2.SIFT_create()
-    kp1, des1 = sift.detectAndCompute(img1, None)
-    kp2, des2 = sift.detectAndCompute(img2, None)
+    kp1, des1 = sift.detectAndCompute(img1_cv, None)
+    kp2, des2 = sift.detectAndCompute(img2_cv, None)
+
+    if des1 is None or des2 is None or len(des1) < 2 or len(des2) < 2:
+        return kp1 or [], kp2 or [], []
 
     index_params = dict(algorithm=1, trees=5)
     search_params = dict(checks=50)
@@ -305,6 +315,57 @@ def _select_greedy_from_best(keypoints1, keypoints2, sorted_matches, min_area):
     
 
 def plot_matches(img1, kp1, img2, kp2, matches):
-    res = cv2.drawMatches(img1, tuple(kp1), img2, tuple(kp2), matches, None)
+    img1_cv = np.asarray(img1)
+    img2_cv = np.asarray(img2)
+    if img1_cv.dtype != np.uint8:
+        img1_cv = img1_cv.astype(np.uint8)
+    if img2_cv.dtype != np.uint8:
+        img2_cv = img2_cv.astype(np.uint8)
+    kp1_list = list(kp1) if not isinstance(kp1, list) else kp1
+    kp2_list = list(kp2) if not isinstance(kp2, list) else kp2
+    matches_list = list(matches) if not isinstance(matches, list) else matches
+
+    # Draw matches with flags parameter
+    res = cv2.drawMatches(
+        img1_cv,
+        kp1_list,
+        img2_cv,
+        kp2_list,
+        matches_list,
+        None,
+        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+    )
+
+    plt.figure(figsize=(15, 8))
     plt.imshow(res)
+    plt.title(f"Feature Matches ({len(matches_list)} matches)")
+    plt.axis("off")
+    plt.tight_layout()
     plt.show()
+
+def full_pipeline(
+    cam,
+    ref,
+    tgt,
+    ref_depth,
+    tgt_depth,
+    pose_ref,
+    pose_tgt,
+    reproj_threshold=200.0,
+    min_area=100.0,
+):
+    kpts1, kpts2, correspondences = correspond(ref, tgt)
+    fkpts1, fkpts2, filtered1 = filter_by_reprojection_error(
+        cam,
+        pose_ref,
+        pose_tgt,
+        kpts1,
+        kpts2,
+        correspondences,
+        ref_depth,
+        reproj_threshold,
+    )
+    filtered = filter_matches_ransac(fkpts1, fkpts2, filtered1)
+    best_4, bkpts1, bkpts2 = select_best_4(fkpts1, fkpts2, filtered, min_area)
+    # Return in order: kpts1, kpts2, matches
+    return bkpts1, bkpts2, best_4

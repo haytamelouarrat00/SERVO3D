@@ -15,6 +15,5 @@ def plot_images(img1, img2, title1, title2):
     plt.tight_layout()
     plt.show()
 
-def get_rotation_matrix(pose):
-    roll, pitch, yaw = pose[3:]
+def get_rotation_matrix(roll, pitch, yaw):
     return R.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
