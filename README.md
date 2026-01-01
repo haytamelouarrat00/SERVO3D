@@ -1,4 +1,3 @@
-
 # SERVO3D
 
 ## Overview
@@ -7,7 +6,7 @@ SERVO3D is a Python framework for simulating image-based visual servoing (IBVS) 
 
 ## Research Motivation
 
-Visual servoing is a core capability for robotics, AR/VR, and autonomous inspection/navigation, yet many IBVS implementations are hard to reproduce because they depend on hardware rigs or proprietary simulators. SERVO3D focuses on a lightweight, reproducible setup that ties together rendering, feature tracking, depth-based geometry, and control. The goal is to make it easy to prototype and analyze IBVS behavior across varied 3D scenes, test sensitivity to feature quality and camera pose, and iterate on control laws before moving to real systems. The motivation behind this framework is the need to find a proper way to combine correspondence filtering with navigating in simulated environments.
+Visual servoing is a core capability for robotics, AR/VR, and autonomous inspection/navigation, yet many IBVS implementations are hard to reproduce because they depend on hardware rigs or proprietary simulators. SERVO3D focuses on a lightweight, reproducible setup that ties together rendering, feature tracking, depth-based geometry, and control. The goal is to make it easy to prototype and analyze IBVS behavior across varied 3D scenes, test sensitivity to feature quality and camera pose, and iterate on control laws before moving to real systems. The motivation behind this framework is the need to find a proper way to combine correspondence filtering with navigating in simulated environments and.
 
 ## Problem Statement
 
@@ -15,11 +14,11 @@ The core problem is selecting the best feature correspondences between a desired
 
 ## Background and Related Work
 
-IBVS (Image-Based Visual Servoing) is a control method that moves a camera by directly minimizing errors between current and desired image features, using only image-space measurements without explicitly reconstructing 3D pose.
+IBVS (Image-Based Visual Servoing) is a control method that moves a camera by directly minimizing errors between current and the desired image features, using only image-space measurements without explicitly reconstructing 3D pose.
 
 ## Methodology
 
-### Feature Detection & Matching
+#### Feature Detection & Matching
 
 - **SIFT features** extracted from desired and current camera views
 - **FLANN-based matching** with Lowe's ratio test (threshold = 0.75)
@@ -27,49 +26,36 @@ IBVS (Image-Based Visual Servoing) is a control method that moves a camera by di
 - **Non-collinearity check** ensures the selected 4 points form a valid quadrilateral
 - **Reprojection error filtering** validates geometric consistency using depth maps
 
-### Visual Servoing Control
+#### Visual Servoing Control
 
 - **Image-based control**: Error computed in normalized image coordinates (not 3D space)
 - **Interaction matrix $L$**: Built from 3D point positions $(X, Y, Z)$ in the camera frame
 - $L = f(x, y, Z) \in \mathbb{R}^{2N \times 6}$, relating pixel velocity to camera velocity
-- **Velocity computation**: 
-  $$v = -\lambda \, L^{+} \, e$$
-  using a damped least-squares pseudoinverse
-- **6-DOF control output**: 
-  $$[v_x, v_y, v_z, \omega_x, \omega_y, \omega_z]$$
-  expressed in the camera frame
+- **Velocity computation**:
 
-### 2.5D Visual Servoing
+$$v = -\lambda \, L^{+} \, e$$
 
-In addition to traditional IBVS, SERVO3D supports **2.5D visual servoing**, which combines image features with depth information to achieve straighter trajectories in Cartesian space while maintaining robustness to calibration errors.
+using a damped least-squares pseudoinverse
 
-- **Augmented features**: Instead of using only 2D pixel coordinates $(u, v)$, 2.5D uses $[u, v, Z]$ where $Z$ is the depth
-- **Improved interaction matrix**: The 2.5D interaction matrix is $L \in \mathbb{R}^{3N \times 6}$ (3 rows per point instead of 2)
-- **Better trajectory**: Combining 2D image measurements with 3D depth leads to nearly straight-line trajectories, unlike the curved paths typical of pure IBVS
-- **Exponential depth convergence**: Optional logarithmic depth features $[u, v, \log(Z)]$ provide exponential convergence
+- **6-DOF control output**:
 
-**Usage:**
-```bash
-# Traditional IBVS (curved trajectory)
-python main.py -d
+$$[v_x, v_y, v_z, \omega_x, \omega_y, \omega_z]$$
 
-# 2.5D servoing (straighter trajectory)
-python main.py -d --use-2-5d
-```
+expressed in the camera frame
 
-### Depth Handling
+#### Depth Handling
 
 - **Depth maps** rendered from the 3D scene provide ground-truth $Z$ values
 - **Per-iteration depth update**: $Z$ refreshed from the current view's depth map
 - **Backprojection**: 2D pixels + depth → 3D points in the camera frame
 
-### Pose Update
+#### Pose Update
 
 - **Exponential integration**: Velocity applied over timestep $dt$
 - **Frame transformation**: Camera-frame velocities converted to world frame for translation update
 - **Rotation update**: Incremental rotation composed with the current orientation
 
-### Convergence
+#### Convergence
 
 - **Error metric**: Norm of pixel error in normalized image coordinates
 - **Termination criterion**:
@@ -98,13 +84,13 @@ Since depth is available from rendered depth maps, we enforce geometric consiste
 
 Using the depth map $D_1$ from the reference view and intrinsics $(f_x, f_y, c_x, c_y)$, backproject the 2D keypoint to 3D in the reference camera frame:
 
-$$X = (u_1 - c_x)\frac{Z}{f_x}, \quad Y = (v_1 - c_y)\frac{Z}{f_y}, \quad Z = D_1[v_1, u_1]$$
+$$X = (u_1 - c_x)\frac{Z}{f_x},\quad Y = (v_1 - c_y)\frac{Z}{f_y},\quad Z = D_1[v_1, u_1]$$
 
 #### Step 2.2: Coordinate Transformation
 
 Compute the relative transformation $(R_{\text{rel}}, t_{\text{rel}})$ between known camera extrinsics:
 
-$$R_{\text{rel}} = R_{\text{target}}^T R_{\text{reference}}, \quad t_{\text{rel}} = R_{\text{target}}^T (t_{\text{reference}} - t_{\text{target}})$$
+$$R_{\text{rel}} = R_{\text{target}}^T R_{\text{reference}},\quad t_{\text{rel}} = R_{\text{target}}^T (t_{\text{reference}} - t_{\text{target}})$$
 
 Transform the 3D point into the target camera frame:
 
@@ -114,7 +100,7 @@ $$P_{\text{target}} = R_{\text{rel}} P_{\text{reference}} + t_{\text{rel}}$$
 
 Project onto the target image plane:
 
-$$u' = f_x \frac{X_{\text{target}}}{Z_{\text{target}}} + c_x, \quad v' = f_y \frac{Y_{\text{target}}}{Z_{\text{target}}} + c_y$$
+$$u' = f_x \frac{X_{\text{target}}}{Z_{\text{target}}} + c_x,\quad v' = f_y \frac{Y_{\text{target}}}{Z_{\text{target}}} + c_y$$
 
 Compute reprojection error:
 
@@ -267,24 +253,18 @@ python main.py
 In order to run the simulation with CLI debugging use the `--debug` or the `-d` flag:
 
 ```bash
-python main.py -d  # or --debug
-```
-
-To enable 2.5D visual servoing for straighter trajectories:
-
-```bash
-python main.py -d --use-2-5d
+python main.py -d #or --debug
 ```
 
 This will output a line with the following details:
 
-**Iteration X:** Error = $e$, $||v|| = v$
+**Iteration X:** Error = $e$, $\lVert v \rVert = v$
 
 ## Results
 
 Results are displayed in a real-time visualization widget with 4 panels:
 
-### 1. Current Camera View
+#### 1. Current Camera View
 
 Displays the rendered image from the current camera pose with overlaid feature markers:
 
@@ -293,7 +273,7 @@ Displays the rendered image from the current camera pose with overlaid feature m
 
 As the servo converges, the green markers move toward the red circles.
 
-### 2. Error Norm Evolution
+#### 2. Error Norm Evolution
 
 Plots the pixel error norm (in normalized image coordinates) over iterations:
 
@@ -302,7 +282,7 @@ Plots the pixel error norm (in normalized image coordinates) over iterations:
 
 The error should decrease monotonically toward the threshold.
 
-### 3. Velocity Commands Evolution
+#### 3. Velocity Commands Evolution
 
 Displays all 6 velocity components over time:
 
@@ -311,7 +291,7 @@ Displays all 6 velocity components over time:
 
 Useful for diagnosing control behavior—oscillations or large spikes indicate potential issues.
 
-### 4. 3D Camera Trajectory
+#### 4. 3D Camera Trajectory
 
 Visualizes the camera path in world coordinates:
 
@@ -320,13 +300,12 @@ Visualizes the camera path in world coordinates:
 - **Red star**: Desired pose
 - **Blue dot**: Current pose
 
-Shows the characteristic arc-like path of IBVS (due to image-space optimization) versus the nearly straight-line path of 2.5D servoing.
+Shows the characteristic arc-like path of IBVS (due to image-space optimization) versus the straight-line path of position-based methods.
 
 ![Demo](simulation.gif)
 
 ### Console Output
 
-```
 Iteration 1: Error = 0.73618, ||v|| = 42.8159
 Iteration 2: Error = 0.69937, ||v|| = 40.6751
 Iteration 3: Error = 0.66440, ||v|| = 38.6414
@@ -348,7 +327,6 @@ Iteration 18: Error = 0.30848, ||v|| = 19.1472
 Iteration 19: Error = 0.29311, ||v|| = 18.1486
 Iteration 20: Error = 0.27850, ||v|| = 17.1974
 ...
-```
 
 Upon convergence or termination:
 
@@ -368,20 +346,8 @@ Final error: X.XX pixels
 
 ## Limitations
 
-- Currently requires depth maps from rendering; real depth sensors have noise
-- Fixed gain control; adaptive gain scheduling could improve convergence
-- SIFT features may struggle in low-texture scenes
-- No obstacle avoidance or visibility constraints in trajectory
-
 ## Future Work
-
-- Integration with real RGB-D cameras and depth sensor noise models
-- Adaptive gain scheduling based on error magnitude and rate
-- Path planning with visibility and collision avoidance constraints
-- Comparison with position-based visual servoing (PBVS)
-- Multi-camera and eye-in-hand configurations
-- Integration with robot manipulators for end-effector control
 
 ## Contact
 
-For any questions, please contact me at <eo.haytam@gmail.com>
+For any questions, please contact me on <eo.haytam@gmail.com>
